@@ -6,16 +6,7 @@ class SongsHandler {
 
   async postSongHandler(request, h) {
     await this._validator.validateSongPayload(request.payload);
-    const { title, year, genre, performer, duration, albumId } =
-    request.payload;
-    const songId = await this._service.addSong({
-      title,
-      year,
-      genre,
-      performer,
-      duration,
-      albumId,
-    });
+    const songId = await this._service.addSong(request.payload);
 
     const response = h.response({
       status: 'success',
@@ -33,45 +24,20 @@ class SongsHandler {
 
     this._validator.validateSongQuery({ title, performer });
 
-    if (title && performer) {
-      const query = 'SELECT * FROM songs WHERE title ILIKE $1 AND performer ILIKE $2';
-      const values = [`%${title}%`, `%${performer}%`];
-      const result = await this._service.getSongsByQuery(query, values);
-      return {
-        status: 'success',
-        message: `songs with title "${title}" and performer "${performer}"`,
-        data: {
-          songs: result,
-        },
-      };
-    } else if (title) {
-      const query = 'SELECT * FROM songs WHERE title ILIKE $1';
-      const values = [`%${title}%`];
-      const result = await this._service.getSongsByQuery(query, values);
-      return {
-        status: 'success',
-        message: `songs with title "${title}"`,
-        data: {
-          songs: result,
-        },
-      };
-    } else if (performer) {
-      const query = 'SELECT * FROM songs WHERE performer ILIKE $1';
-      const values = [`%${performer}%`];
-      const result = await this._service.getSongsByQuery(query, values);
-      return {
-        status: 'success',
-        message: `songs with performer "${performer}"`,
-        data: {
-          songs: result,
-        },
-      };
-    }
+    const songs = await this._service.getSongs({ title, performer });
 
-    const songs = await this._service.getSongs();
+    let message = '';
+    if (title && performer) {
+      message = `Song with title "${title}" and performer "${performer}"`;
+    } else if (title) {
+      message = `Song with title "${title}"`;
+    } else if (performer) {
+      message = `Song with performer "${performer}"`;
+    }
 
     return {
       status: 'success',
+      ...(message && { message }),
       data: {
         songs,
       },

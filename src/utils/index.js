@@ -1,33 +1,27 @@
-/* eslint-disable camelcase */
+const mapDBToModelAlbum = (dbPayload) => {
+  const album = {
+    id: dbPayload.id,
+    name: dbPayload.name,
+    year: dbPayload.year
+  };
+  album.createdAt = dbPayload['created_at'];
+  album.updatedAt = dbPayload['updated_at'];
+  return album;
+};
 
-const mapDBToModelAlbum = ({ id, name, year, created_at, updated_at }) => ({
-  id,
-  name,
-  year,
-  createdAt: created_at,
-  updatedAt: updated_at,
-});
-
-const mapDBToModelSong = ({
-  id,
-  title,
-  year,
-  genre,
-  performer,
-  duration,
-  album_id,
-  created_at,
-  updated_at,
-}) => ({
-  id,
-  title,
-  year,
-  genre,
-  performer,
-  duration,
-  albumId: album_id,
-  createdAt: created_at,
-  updatedAt: updated_at,
-});
+const mapDBToModelSong = (dbPayload) => {
+  const song = {
+    id: dbPayload.id,
+    title: dbPayload.title,
+    year: dbPayload.year,
+    genre: dbPayload.genre,
+    performer: dbPayload.performer,
+    duration: dbPayload.duration,
+    albumId: dbPayload.album_id
+  };
+  song.createdAt = dbPayload['created_at'];
+  song.updatedAt = dbPayload['updated_at'];
+  return song;
+};
 
 module.exports = { mapDBToModelAlbum, mapDBToModelSong };

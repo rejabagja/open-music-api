@@ -38,7 +38,24 @@ class SongsService {
     return result.rows[0].id;
   }
 
-  async getSongs() {
+  async getSongs(query) {
+    const { title, performer } = query;
+
+    if (title && performer) {
+      const query =
+        'SELECT * FROM songs WHERE title ILIKE $1 AND performer ILIKE $2';
+      const values = [`%${title}%`, `%${performer}%`];
+      return await this.getSongsByQuery(query, values);
+    } else if (title) {
+      const query = 'SELECT * FROM songs WHERE title ILIKE $1';
+      const values = [`%${title}%`];
+      return await this.getSongsByQuery(query, values);
+    } else if (performer) {
+      const query = 'SELECT * FROM songs WHERE performer ILIKE $1';
+      const values = [`%${performer}%`];
+      return await this.getSongsByQuery(query, values);
+    }
+
     const result = await this._pool.query('SELECT * FROM songs');
     return result.rows.map(mapDBToModelSong).map((song) => ({
       id: song.id,
@@ -76,11 +93,11 @@ class SongsService {
       year,
       genre,
       performer,
-      updated_at: updatedAt, // eslint-disable-line
+      'updated_at': updatedAt,
     };
 
     if (duration !== undefined) updates.duration = duration;
-    if (albumId !== undefined) updates.album_id = albumId; // eslint-disable-line
+    if (albumId !== undefined) updates['album_id'] = albumId;
 
     const query = {
       text: `UPDATE songs SET ${Object.keys(updates)

@@ -1,5 +1,3 @@
-/* eslint-disable camelcase */
-
 const up = (pgm) => {
   pgm.createTable('albums', {
     id: {
@@ -14,11 +12,11 @@ const up = (pgm) => {
       type: 'SMALLINT',
       notNull: true,
     },
-    created_at: {
+    'created_at': {
       type: 'VARCHAR(50)',
       notNull: true,
     },
-    updated_at: {
+    'updated_at': {
       type: 'VARCHAR(50)',
       notNull: true,
     },

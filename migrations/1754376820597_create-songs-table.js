@@ -1,5 +1,3 @@
-/* eslint-disable camelcase */
-
 const up = (pgm) => {
   pgm.createTable('songs', {
     id: {
@@ -25,16 +23,16 @@ const up = (pgm) => {
     duration: {
       type: 'INTEGER',
     },
-    album_id: {
+    'album_id': {
       type: 'CHAR(22)',
       references: '"albums"',
       onDelete: 'cascade',
     },
-    created_at: {
+    'created_at': {
       type: 'VARCHAR(50)',
       notNull: true,
     },
-    updated_at: {
+    'updated_at': {
       type: 'VARCHAR(50)',
       notNull: true,
     },
