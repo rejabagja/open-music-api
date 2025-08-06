@@ -118,6 +118,18 @@ class SongsService {
       performer: song.performer,
     }));
   }
+
+  static async getSongsByAlbumId(albumId) {
+    const pool = new Pool();
+    const query = 'SELECT * FROM songs WHERE album_id = $1';
+    const values = [albumId];
+    const result = await pool.query(query, values);
+    return result.rows.map(mapDBToModelSong).map((song) => ({
+      id: song.id,
+      title: song.title,
+      performer: song.performer,
+    }));
+  }
 }
 
 module.exports = SongsService;

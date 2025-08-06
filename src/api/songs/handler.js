@@ -34,12 +34,12 @@ class SongsHandler {
     this._validator.validateSongQuery({ title, performer });
 
     if (title && performer) {
-      const query = 'SELECT * FROM songs WHERE title ILIKE $1 AND performer ILIKE $2';
+      const query = 'SELECT * FROM songs WHERE title ILIKE $1 OR performer ILIKE $2';
       const values = [`%${title}%`, `%${performer}%`];
       const result = await this._service.getSongsByQuery(query, values);
       return {
         status: 'success',
-        message: `songs with title "${title}" and performer "${performer}"`,
+        message: `songs with title "${title}" or performer "${performer}"`,
         data: {
           songs: result,
         },
