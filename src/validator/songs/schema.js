@@ -9,7 +9,7 @@ const SongPayloadSchema = Joi.object({
   performer: Joi.string().required(),
   duration: Joi.number().integer().min(1).strict(),
   albumId: Joi.string().messages({
-    'string.empty': 'albumId should not be empty string',
+    'string.empty': '"albumId" is not allowed to be empty string',
   }),
 });
 

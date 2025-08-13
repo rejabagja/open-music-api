@@ -81,14 +81,16 @@ const init = async () => {
     {
       plugin: albums,
       options: {
-        service: albumsService,
+        albumsService,
+        songsService,
         validator: AlbumsValidator,
       },
     },
     {
       plugin: songs,
       options: {
-        service: songsService,
+        songsService,
+        albumsService,
         validator: SongsValidator,
       },
     },

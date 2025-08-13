@@ -1,7 +1,7 @@
 const up = (pgm) => {
   pgm.createTable('albums', {
     id: {
-      type: 'CHAR(22)',
+      type: 'VARCHAR(50)',
       primaryKey: true,
     },
     name: {
@@ -10,14 +10,6 @@ const up = (pgm) => {
     },
     year: {
       type: 'SMALLINT',
-      notNull: true,
-    },
-    'created_at': {
-      type: 'VARCHAR(50)',
-      notNull: true,
-    },
-    'updated_at': {
-      type: 'VARCHAR(50)',
       notNull: true,
     },
   });

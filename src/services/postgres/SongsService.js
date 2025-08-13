@@ -11,11 +11,9 @@ class SongsService {
 
   async addSong({ title, year, genre, performer, duration, albumId }) {
     const id = `song-${nanoid(16)}`;
-    const createdAt = new Date().toISOString();
-    const updatedAt = createdAt;
 
     const query = {
-      text: 'INSERT INTO songs VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id',
+      text: 'INSERT INTO songs VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING id',
       values: [
         id,
         title,
@@ -24,8 +22,6 @@ class SongsService {
         performer,
         duration,
         albumId,
-        createdAt,
-        updatedAt,
       ],
     };
 
@@ -42,8 +38,7 @@ class SongsService {
     const { title, performer } = query;
 
     if (title && performer) {
-      const query =
-        'SELECT * FROM songs WHERE title ILIKE $1 AND performer ILIKE $2';
+      const query = 'SELECT * FROM songs WHERE title ILIKE $1 AND performer ILIKE $2';
       const values = [`%${title}%`, `%${performer}%`];
       return await this.getSongsByQuery(query, values);
     } else if (title) {
@@ -87,17 +82,15 @@ class SongsService {
   }
 
   async editSongById(id, { title, year, genre, performer, duration, albumId }) {
-    const updatedAt = new Date().toISOString();
     const updates = {
       title,
       year,
       genre,
       performer,
-      'updated_at': updatedAt,
     };
 
-    if (duration !== undefined) updates.duration = duration;
-    if (albumId !== undefined) updates['album_id'] = albumId;
+    if (duration) updates.duration = duration;
+    if (albumId) updates['album_id'] = albumId;
 
     const query = {
       text: `UPDATE songs SET ${Object.keys(updates)
@@ -114,6 +107,7 @@ class SongsService {
       throw new NotFoundError('Gagal memperbarui song. Id tidak ditemukan');
     }
   }
+
   async deleteSongById(id) {
     const query = {
       text: 'DELETE FROM songs WHERE id = $1 RETURNING id',
@@ -136,11 +130,12 @@ class SongsService {
     }));
   }
 
-  static async getSongsByAlbumId(albumId) {
-    const pool = new Pool();
-    const query = 'SELECT * FROM songs WHERE album_id = $1';
-    const values = [albumId];
-    const result = await pool.query(query, values);
+  async getSongsByAlbumId(id) {
+    const query = {
+      text: 'SELECT * FROM songs WHERE album_id = $1',
+      values: [id],
+    };
+    const result = await this._pool.query(query);
     return result.rows.map(mapDBToModelSong).map((song) => ({
       id: song.id,
       title: song.title,
