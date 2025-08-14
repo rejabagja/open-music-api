@@ -14,15 +14,7 @@ class SongsService {
 
     const query = {
       text: 'INSERT INTO songs VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING id',
-      values: [
-        id,
-        title,
-        year,
-        genre,
-        performer,
-        duration,
-        albumId,
-      ],
+      values: [id, title, year, genre, performer, duration, albumId],
     };
 
     const result = await this._pool.query(query);
@@ -38,7 +30,8 @@ class SongsService {
     const { title, performer } = query;
 
     if (title && performer) {
-      const query = 'SELECT * FROM songs WHERE title ILIKE $1 AND performer ILIKE $2';
+      const query =
+        'SELECT * FROM songs WHERE title ILIKE $1 AND performer ILIKE $2';
       const values = [`%${title}%`, `%${performer}%`];
       return await this.getSongsByQuery(query, values);
     } else if (title) {
@@ -141,6 +134,17 @@ class SongsService {
       title: song.title,
       performer: song.performer,
     }));
+  }
+
+  async verifySong(id) {
+    try {
+      await this.getSongById(id);
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        throw new InvariantError('songId tidak valid');
+      }
+      throw error;
+    }
   }
 }
 
