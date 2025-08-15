@@ -1,6 +1,3 @@
-const InvariantError = require('../../exceptions/InvariantError');
-const NotFoundError = require('../../exceptions/NotFoundError');
-
 class CollaborationsHandler {
   constructor(collaborationsService, playlistsService, usersService, validator) {
     this._collaborationsService = collaborationsService;
@@ -14,17 +11,7 @@ class CollaborationsHandler {
 
     const currentUserId = request.auth.credentials.id;
     const { playlistId, userId } = request.payload;
-    try {
-      await this._playlistsService.verifyPlaylistOwner(
-        playlistId,
-        currentUserId
-      );
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        throw new InvariantError('playlistId tidak valid');
-      }
-      throw error;
-    }
+    await this._playlistsService.verifyPlaylistAccess(playlistId, currentUserId);
     await this._usersService.verifyUserId(userId);
 
     const collaborationId = await this._collaborationsService.addCollaboration({
@@ -47,7 +34,7 @@ class CollaborationsHandler {
 
     const currentUserId = request.auth.credentials.id;
     const { playlistId, userId } = request.payload;
-    await this._playlistsService.verifyPlaylistOwner(playlistId, currentUserId);
+    await this._playlistsService.verifyPlaylistAccess(playlistId, currentUserId);
     await this._usersService.verifyUserId(userId);
 
     await this._collaborationsService.deleteCollaboration({

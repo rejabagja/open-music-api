@@ -141,7 +141,7 @@ class SongsService {
       await this.getSongById(id);
     } catch (error) {
       if (error instanceof NotFoundError) {
-        throw new InvariantError('songId tidak valid');
+        throw error;
       }
       throw error;
     }
