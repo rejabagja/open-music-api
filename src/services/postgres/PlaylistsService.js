@@ -5,9 +5,10 @@ const NotFoundError = require('../../exceptions/NotFoundError');
 const AuthorizationError = require('../../exceptions/AuthorizationError');
 
 class PlaylistsService {
-  constructor(collaborationsService) {
+  constructor(collaborationsService, playlistActivitiesService) {
     this._pool = new Pool();
     this._collaborationsService = collaborationsService;
+    this._playlistActivitiesService = playlistActivitiesService;
   }
 
   async addPlaylist({ name, owner }) {
@@ -55,10 +56,10 @@ class PlaylistsService {
     }
   }
 
-  async verifyPlaylistOwner(id, userId) {
+  async verifyPlaylistOwner(playlistId, userId) {
     const query = {
       text: 'SELECT * FROM playlists WHERE id = $1',
-      values: [id],
+      values: [playlistId],
     };
     const result = await this._pool.query(query);
     if (!result.rows.length) {
@@ -70,7 +71,7 @@ class PlaylistsService {
     }
   }
 
-  async addPlaylistSong({ playlistId, songId }) {
+  async addPlaylistSong({ playlistId, songId, userId }) {
     try {
       const id = `pls-${nanoid(16)}`;
       const query = {
@@ -83,11 +84,16 @@ class PlaylistsService {
         throw new InvariantError('Song gagal ditambahkan ke dalam playlist');
       }
 
+      await this._playlistActivitiesService.addActivity({
+        playlistId,
+        songId,
+        userId,
+        action: 'add',
+      });
+
       return result.rows[0].id;
     } catch (error) {
-      if (
-        error.message.includes('violates unique constraint')
-      ) {
+      if (error.message.includes('violates unique constraint')) {
         throw new InvariantError('Song sudah ada di dalam playlist');
       }
 
@@ -97,10 +103,11 @@ class PlaylistsService {
 
   async getPlaylistSongs(playlistId, userId) {
     const queryPlaylist = {
-      text: `SELECT playlists.id, playlists.name, users.username FROM playlists
+      text: `SELECT playlists.id, playlists.name, users.username 
+            FROM playlists
             LEFT JOIN users ON users.id = playlists.owner
             LEFT JOIN collaborations ON collaborations.playlist_id = playlists.id
-            WHERE playlists.owner = $1 OR collaborations.user_id = $1 AND playlists.id = $2`,
+            WHERE (playlists.owner = $1 OR collaborations.user_id = $1) AND playlists.id = $2`,
       values: [userId, playlistId],
     };
 
@@ -115,7 +122,7 @@ class PlaylistsService {
             FROM songs
             INNER JOIN playlist_songs ON playlist_songs.song_id = songs.id
             WHERE playlist_songs.playlist_id = $1`,
-      values: [playlistId]
+      values: [playlistId],
     };
     const songs = await this._pool.query(querySongs);
     playlist.songs = songs.rows;
@@ -123,16 +130,25 @@ class PlaylistsService {
     return playlist;
   }
 
-  async deletePlaylistSong({ playlistId, songId }) {
+  async deletePlaylistSong({ playlistId, songId, userId }) {
     const query = {
       text: 'DELETE FROM playlist_songs WHERE playlist_id = $1 AND song_id = $2 RETURNING id',
-      values: [playlistId, songId]
+      values: [playlistId, songId],
     };
 
     const result = await this._pool.query(query);
     if (!result.rows.length) {
-      throw new NotFoundError('Gagal menghapus song dari playlist. playlistId atau songId tidak ditemukan');
+      throw new NotFoundError(
+        'Gagal menghapus song dari playlist. Song tidak ditemukan di dalam playlist'
+      );
     }
+
+    await this._playlistActivitiesService.addActivity({
+      playlistId,
+      songId,
+      userId,
+      action: 'delete',
+    });
   }
 
   async verifyPlaylistAccess(playlistId, userId) {
@@ -143,11 +159,18 @@ class PlaylistsService {
         throw error;
       }
       try {
-        await this._collaborationsService.verifyCollaborator(playlistId, userId);
+        await this._collaborationsService.verifyCollaborator(
+          playlistId,
+          userId
+        );
       } catch {
         throw error;
       }
     }
+  }
+
+  async getPlaylistActivities(playlistId) {
+    return await this._playlistActivitiesService.getActivities(playlistId);
   }
 }
 

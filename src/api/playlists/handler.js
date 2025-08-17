@@ -48,12 +48,12 @@ class PlaylistsHandler {
   async postPlaylistSongHandler(request, h) {
     const { id: playlistId } = request.params;
     const currentUserId = request.auth.credentials.id;
+    await this._playlistsService.verifyPlaylistAccess(playlistId, currentUserId);
     await this._validator.validatePostPlaylistSongPayload(request.payload);
     await this._songsService.verifySong(request.payload.songId);
-    await this._playlistsService.verifyPlaylistAccess(playlistId, currentUserId);
 
     const { songId } = request.payload;
-    await this._playlistsService.addPlaylistSong({ playlistId, songId });
+    await this._playlistsService.addPlaylistSong({ playlistId, songId, userId: currentUserId });
     const response = h.response({
       status: 'success',
       message: 'Song berhasil ditambahkan ke playlist',
@@ -77,16 +77,32 @@ class PlaylistsHandler {
   }
 
   async deletePlaylistSongHandler(request) {
+    const { id: playlistId } = request.params;
+    const currentUserId = request.auth.credentials.id;
+    await this._playlistsService.verifyPlaylistAccess(playlistId, currentUserId);
     await this._validator.validateDeletePlaylistSongPayload(request.payload);
+    await this._songsService.verifySong(request.payload.songId);
+
+    const { songId } = request.payload;
+    await this._playlistsService.deletePlaylistSong({ playlistId, songId, userId: currentUserId });
+    return {
+      status: 'success',
+      message: 'Song berhasil dihapus dari playlist',
+    };
+  }
+
+  async getPlaylistActivitiesHandler(request) {
     const { id: playlistId } = request.params;
     const currentUserId = request.auth.credentials.id;
     await this._playlistsService.verifyPlaylistAccess(playlistId, currentUserId);
 
-    const { songId } = request.payload;
-    await this._playlistsService.deletePlaylistSong({ playlistId, songId });
+    const activities = await this._playlistsService.getPlaylistActivities(playlistId);
     return {
       status: 'success',
-      message: 'Song berhasil dihapus dari playlist',
+      data: {
+        playlistId,
+        activities,
+      }
     };
   }
 }
