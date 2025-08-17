@@ -102,32 +102,33 @@ class PlaylistsService {
   }
 
   async getPlaylistSongs(playlistId, userId) {
-    const queryPlaylist = {
-      text: `SELECT playlists.id, playlists.name, users.username 
+    const query = {
+      text: `SELECT playlists.id, playlists.name, users.username,
+            COALESCE(
+                  json_agg(
+                      json_build_object(
+                          'id', songs.id,
+                          'title', songs.title,
+                          'performer', songs.performer
+                      )
+                  ) FILTER (WHERE songs.id IS NOT NULL),
+                  '[]'::json
+              ) AS songs
             FROM playlists
             LEFT JOIN users ON users.id = playlists.owner
             LEFT JOIN collaborations ON collaborations.playlist_id = playlists.id
-            WHERE (playlists.owner = $1 OR collaborations.user_id = $1) AND playlists.id = $2`,
+            LEFT JOIN playlist_songs ON playlist_songs.playlist_id = playlists.id
+            LEFT JOIN songs ON songs.id = playlist_songs.song_id
+            WHERE (playlists.owner = $1 OR collaborations.user_id = $1) AND playlists.id = $2
+            GROUP BY playlists.id, users.username`,
       values: [userId, playlistId],
     };
 
-    const resultPlaylist = await this._pool.query(queryPlaylist);
-    if (!resultPlaylist.rows.length) {
+    const result = await this._pool.query(query);
+    if (!result.rows.length) {
       throw new NotFoundError('Playlist tidak ditemukan');
     }
-    const playlist = resultPlaylist.rows[0];
-
-    const querySongs = {
-      text: `SELECT songs.id, songs.title, songs.performer
-            FROM songs
-            INNER JOIN playlist_songs ON playlist_songs.song_id = songs.id
-            WHERE playlist_songs.playlist_id = $1`,
-      values: [playlistId],
-    };
-    const songs = await this._pool.query(querySongs);
-    playlist.songs = songs.rows;
-
-    return playlist;
+    return result.rows[0];
   }
 
   async deletePlaylistSong({ playlistId, songId, userId }) {

@@ -2,7 +2,7 @@ const { nanoid } = require('nanoid');
 const { Pool } = require('pg');
 const InvariantError = require('../../exceptions/InvariantError');
 const NotFoundError = require('../../exceptions/NotFoundError');
-const { mapDBToModelSong } = require('../../utils');
+const { mapDBToModelSong, mapRecordDBToModelSong } = require('../../utils');
 
 class SongsService {
   constructor() {
@@ -45,11 +45,7 @@ class SongsService {
     }
 
     const result = await this._pool.query('SELECT * FROM songs');
-    return result.rows.map(mapDBToModelSong).map((song) => ({
-      id: song.id,
-      title: song.title,
-      performer: song.performer,
-    }));
+    return result.rows.map(mapRecordDBToModelSong);
   }
 
   async getSongById(id) {
@@ -63,15 +59,7 @@ class SongsService {
       throw new NotFoundError('Song tidak ditemukan');
     }
 
-    return result.rows.map(mapDBToModelSong).map((song) => ({
-      id: song.id,
-      title: song.title,
-      year: song.year,
-      performer: song.performer,
-      genre: song.genre,
-      duration: song.duration,
-      albumId: song.albumId,
-    }))[0];
+    return result.rows.map(mapDBToModelSong)[0];
   }
 
   async editSongById(id, { title, year, genre, performer, duration, albumId }) {
@@ -116,24 +104,7 @@ class SongsService {
 
   async getSongsByQuery(query, values) {
     const result = await this._pool.query(query, values);
-    return result.rows.map(mapDBToModelSong).map((song) => ({
-      id: song.id,
-      title: song.title,
-      performer: song.performer,
-    }));
-  }
-
-  async getSongsByAlbumId(id) {
-    const query = {
-      text: 'SELECT * FROM songs WHERE album_id = $1',
-      values: [id],
-    };
-    const result = await this._pool.query(query);
-    return result.rows.map(mapDBToModelSong).map((song) => ({
-      id: song.id,
-      title: song.title,
-      performer: song.performer,
-    }));
+    return result.rows.map(mapRecordDBToModelSong);
   }
 
   async verifySong(id) {
