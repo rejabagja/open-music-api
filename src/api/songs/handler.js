@@ -27,7 +27,7 @@ class SongsHandler {
     const { title = '', performer = '' } = request.query;
     this._validator.validateSongQuery({ title, performer });
 
-    const songs = await this._songsService.getSongs({ title, performer });
+    const songs = await this._songsService.getSongs(title, performer);
 
     let message = '';
     if (title && performer) {

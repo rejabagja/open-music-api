@@ -2,14 +2,15 @@ const { nanoid } = require('nanoid');
 const { Pool } = require('pg');
 const InvariantError = require('../../exceptions/InvariantError');
 const NotFoundError = require('../../exceptions/NotFoundError');
-const { mapDBToModelSong, mapRecordDBToModelSong } = require('../../utils');
+const { mapDBToModelSong } = require('../../utils');
 
 class SongsService {
   constructor() {
     this._pool = new Pool();
   }
 
-  async addSong({ title, year, genre, performer, duration, albumId }) {
+  async addSong(payload) {
+    const { title, year, genre, performer, duration, albumId } = payload;
     const id = `song-${nanoid(16)}`;
 
     const query = {
@@ -26,26 +27,14 @@ class SongsService {
     return result.rows[0].id;
   }
 
-  async getSongs(query) {
-    const { title, performer } = query;
+  async getSongs(title = '', performer = '') {
+    const query = {
+      text: 'SELECT id, title, performer FROM songs WHERE title ILIKE $1 AND performer ILIKE $2',
+      values: [`%${title}%`, `%${performer}%`],
+    };
 
-    if (title && performer) {
-      const query =
-        'SELECT * FROM songs WHERE title ILIKE $1 AND performer ILIKE $2';
-      const values = [`%${title}%`, `%${performer}%`];
-      return await this.getSongsByQuery(query, values);
-    } else if (title) {
-      const query = 'SELECT * FROM songs WHERE title ILIKE $1';
-      const values = [`%${title}%`];
-      return await this.getSongsByQuery(query, values);
-    } else if (performer) {
-      const query = 'SELECT * FROM songs WHERE performer ILIKE $1';
-      const values = [`%${performer}%`];
-      return await this.getSongsByQuery(query, values);
-    }
-
-    const result = await this._pool.query('SELECT * FROM songs');
-    return result.rows.map(mapRecordDBToModelSong);
+    const { rows } = await this._pool.query(query);
+    return rows;
   }
 
   async getSongById(id) {
@@ -62,7 +51,8 @@ class SongsService {
     return result.rows.map(mapDBToModelSong)[0];
   }
 
-  async editSongById(id, { title, year, genre, performer, duration, albumId }) {
+  async editSongById(id, payload) {
+    const { title, year, genre, performer, duration, albumId } = payload;
     const updates = {
       title,
       year,
@@ -100,11 +90,6 @@ class SongsService {
     if (!result.rows.length) {
       throw new NotFoundError('Song gagal dihapus. Id tidak ditemukan');
     }
-  }
-
-  async getSongsByQuery(query, values) {
-    const result = await this._pool.query(query, values);
-    return result.rows.map(mapRecordDBToModelSong);
   }
 
   async verifySong(id) {
