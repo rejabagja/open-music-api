@@ -9,24 +9,13 @@ class SongsService {
     this._pool = new Pool();
   }
 
-  async addSong({ title, year, genre, performer, duration, albumId }) {
+  async addSong(payload) {
+    const { title, year, genre, performer, duration, albumId } = payload;
     const id = `song-${nanoid(16)}`;
-    const createdAt = new Date().toISOString();
-    const updatedAt = createdAt;
 
     const query = {
-      text: 'INSERT INTO songs VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id',
-      values: [
-        id,
-        title,
-        year,
-        genre,
-        performer,
-        duration,
-        albumId,
-        createdAt,
-        updatedAt,
-      ],
+      text: 'INSERT INTO songs VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+      values: [id, title, year, genre, performer, duration, albumId],
     };
 
     const result = await this._pool.query(query);
@@ -38,30 +27,14 @@ class SongsService {
     return result.rows[0].id;
   }
 
-  async getSongs(query) {
-    const { title, performer } = query;
+  async getSongs(title = '', performer = '') {
+    const query = {
+      text: 'SELECT id, title, performer FROM songs WHERE title ILIKE $1 AND performer ILIKE $2',
+      values: [`%${title}%`, `%${performer}%`],
+    };
 
-    if (title && performer) {
-      const query =
-        'SELECT * FROM songs WHERE title ILIKE $1 AND performer ILIKE $2';
-      const values = [`%${title}%`, `%${performer}%`];
-      return await this.getSongsByQuery(query, values);
-    } else if (title) {
-      const query = 'SELECT * FROM songs WHERE title ILIKE $1';
-      const values = [`%${title}%`];
-      return await this.getSongsByQuery(query, values);
-    } else if (performer) {
-      const query = 'SELECT * FROM songs WHERE performer ILIKE $1';
-      const values = [`%${performer}%`];
-      return await this.getSongsByQuery(query, values);
-    }
-
-    const result = await this._pool.query('SELECT * FROM songs');
-    return result.rows.map(mapDBToModelSong).map((song) => ({
-      id: song.id,
-      title: song.title,
-      performer: song.performer,
-    }));
+    const { rows } = await this._pool.query(query);
+    return rows;
   }
 
   async getSongById(id) {
@@ -75,29 +48,20 @@ class SongsService {
       throw new NotFoundError('Song tidak ditemukan');
     }
 
-    return result.rows.map(mapDBToModelSong).map((song) => ({
-      id: song.id,
-      title: song.title,
-      year: song.year,
-      performer: song.performer,
-      genre: song.genre,
-      duration: song.duration,
-      albumId: song.albumId,
-    }))[0];
+    return result.rows.map(mapDBToModelSong)[0];
   }
 
-  async editSongById(id, { title, year, genre, performer, duration, albumId }) {
-    const updatedAt = new Date().toISOString();
+  async editSongById(id, payload) {
+    const { title, year, genre, performer, duration, albumId } = payload;
     const updates = {
       title,
       year,
       genre,
       performer,
-      'updated_at': updatedAt,
     };
 
-    if (duration !== undefined) updates.duration = duration;
-    if (albumId !== undefined) updates['album_id'] = albumId;
+    if (duration) updates.duration = duration;
+    if (albumId) updates['album_id'] = albumId;
 
     const query = {
       text: `UPDATE songs SET ${Object.keys(updates)
@@ -114,6 +78,7 @@ class SongsService {
       throw new NotFoundError('Gagal memperbarui song. Id tidak ditemukan');
     }
   }
+
   async deleteSongById(id) {
     const query = {
       text: 'DELETE FROM songs WHERE id = $1 RETURNING id',
@@ -127,25 +92,15 @@ class SongsService {
     }
   }
 
-  async getSongsByQuery(query, values) {
-    const result = await this._pool.query(query, values);
-    return result.rows.map(mapDBToModelSong).map((song) => ({
-      id: song.id,
-      title: song.title,
-      performer: song.performer,
-    }));
-  }
-
-  static async getSongsByAlbumId(albumId) {
-    const pool = new Pool();
-    const query = 'SELECT * FROM songs WHERE album_id = $1';
-    const values = [albumId];
-    const result = await pool.query(query, values);
-    return result.rows.map(mapDBToModelSong).map((song) => ({
-      id: song.id,
-      title: song.title,
-      performer: song.performer,
-    }));
+  async verifySong(id) {
+    try {
+      await this.getSongById(id);
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
+      throw error;
+    }
   }
 }
 

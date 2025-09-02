@@ -1,7 +1,7 @@
 const up = (pgm) => {
   pgm.createTable('songs', {
     id: {
-      type: 'CHAR(22)',
+      type: 'VARCHAR(50)',
       primaryKey: true,
     },
     title: {
@@ -23,18 +23,10 @@ const up = (pgm) => {
     duration: {
       type: 'INTEGER',
     },
-    'album_id': {
-      type: 'CHAR(22)',
+    album_id: {
+      type: 'VARCHAR(50)',
       references: '"albums"',
       onDelete: 'cascade',
-    },
-    'created_at': {
-      type: 'VARCHAR(50)',
-      notNull: true,
-    },
-    'updated_at': {
-      type: 'VARCHAR(50)',
-      notNull: true,
     },
   });
 };
