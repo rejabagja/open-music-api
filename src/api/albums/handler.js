@@ -24,6 +24,9 @@ class AlbumsHandler {
   async getAlbumByIdHandler(request) {
     const { id } = request.params;
     const album = await this._albumsService.getAlbumById(id);
+    album.coverUrl = album.coverName ? `http://${process.env.HOST}:${process.env.PORT}/upload/images/${album.coverName}` : null;
+    delete album.coverName;
+
     return {
       status: 'success',
       data: {

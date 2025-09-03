@@ -2,6 +2,7 @@ const { nanoid } = require('nanoid');
 const { Pool } = require('pg');
 const InvariantError = require('../../exceptions/InvariantError');
 const NotFoundError = require('../../exceptions/NotFoundError');
+const { mapDBToModelAlbum } = require('./../../utils/index');
 
 class AlbumsService {
   constructor() {
@@ -27,7 +28,7 @@ class AlbumsService {
 
   async getAlbumById(id) {
     const query = {
-      text: `SELECT albums.id, albums.name, albums.year,
+      text: `SELECT albums.*,
               COALESCE(
                   json_agg(
                       json_build_object(
@@ -49,13 +50,24 @@ class AlbumsService {
     if (!result.rows.length) {
       throw new NotFoundError('Album tidak ditemukan');
     }
-    return result.rows[0];
+    return mapDBToModelAlbum(result.rows[0]);
   }
 
-  async editAlbumById(id, { name, year }) {
+  async editAlbumById(id, { name, year, coverName }) {
+    let updates = {
+      name,
+      year,
+    };
+
+    if (coverName) updates['cover_name'] = coverName;
+    updates = Object.fromEntries(Object.entries(updates).filter(([key, value]) => key.length > 0 && value !== undefined));
     const query = {
-      text: 'UPDATE albums SET name = $1, year = $2 WHERE id = $3 RETURNING id',
-      values: [name, year, id],
+      text: `UPDATE albums SET ${Object.keys(updates)
+        .map((key) => `${key} = $${Object.keys(updates).indexOf(key) + 1}`)
+        .join(', ')} WHERE id = $${
+        Object.keys(updates).length + 1
+      } RETURNING id`,
+      values: [...Object.values(updates), id],
     };
 
     const result = await this._pool.query(query);
@@ -63,6 +75,8 @@ class AlbumsService {
     if (!result.rows.length) {
       throw new NotFoundError('Gagal memperbarui album. Id tidak ditemukan');
     }
+
+    return result.rows[0].id;
   }
 
   async deleteAlbumById(id) {

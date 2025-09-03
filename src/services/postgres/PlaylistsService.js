@@ -26,7 +26,7 @@ class PlaylistsService {
 
       return result.rows[0].id;
     } catch (error) {
-      console.log('HALLO');
+      console.error(error);
       throw error;
     }
   }

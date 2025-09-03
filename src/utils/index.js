@@ -11,4 +11,15 @@ const mapDBToModelSong = (dbField) => {
   return song;
 };
 
-module.exports = { mapDBToModelSong };
+const mapDBToModelAlbum = (dbField) => {
+  const album = {
+    id: dbField.id,
+    name: dbField.name,
+    year: dbField.year,
+    songs: dbField.songs,
+  };
+  album.coverName = dbField['cover_name'];
+  return album;
+};
+
+module.exports = { mapDBToModelSong, mapDBToModelAlbum };
