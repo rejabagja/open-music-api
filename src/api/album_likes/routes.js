@@ -18,7 +18,7 @@ const routes = (handler) => [
   {
     method: 'GET',
     path: '/albums/{id}/likes',
-    handler: (request) => handler.getAlbumLikesHandler(request),
+    handler: (request, h) => handler.getAlbumLikesHandler(request, h),
   }
 ];
 

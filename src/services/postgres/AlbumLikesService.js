@@ -4,8 +4,9 @@ const InvariantError = require('./../../exceptions/InvariantError');
 const NotFoundError = require('./../../exceptions/NotFoundError');
 
 class AlbumLikesService {
-  constructor() {
+  constructor(cacheService) {
     this._pool = new Pool();
+    this._cacheService = cacheService;
   }
 
   async addAlbumLike({ userId, albumId }) {
@@ -21,6 +22,7 @@ class AlbumLikesService {
         throw new InvariantError('Album like gagal ditambahkan');
       }
 
+      await this._cacheService.delete(`albumLikes:${albumId}`);
       return result.rows[0].id;
     } catch (error) {
       if (error.message.includes('violates unique constraint')) {
@@ -41,16 +43,36 @@ class AlbumLikesService {
     if (!result.rows.length) {
       throw new NotFoundError('Album like gagal dihapus. Id tidak ditemukan');
     }
+
+    await this._cacheService.delete(`albumLikes:${albumId}`);
   }
 
   async getAlbumLikes(albumId) {
-    const query = {
-      text: 'SELECT COUNT(*)::int AS likes FROM user_album_likes WHERE album_id = $1',
-      values: [albumId],
-    };
-    const result = await this._pool.query(query);
+    try {
+      const result = await this._cacheService.get(`albumLikes:${albumId}`);
+      return {
+        likes: JSON.parse(result),
+        isCached: true,
+      };
+    } catch (error) {
+      console.error(error.message);
+      const query = {
+        text: 'SELECT COUNT(*)::int AS likes FROM user_album_likes WHERE album_id = $1',
+        values: [albumId],
+      };
+      const result = await this._pool.query(query);
 
-    return result.rows[0].likes;
+      await this._cacheService.set(
+        `albumLikes:${albumId}`,
+        JSON.stringify(result.rows[0].likes),
+        1800
+      );
+
+      return {
+        likes: result.rows[0].likes,
+        isCached: false,
+      };
+    }
   }
 }
 

@@ -21,16 +21,20 @@ class PlaylistsHandler {
     return response;
   }
 
-  async getPlaylistsHandler(request) {
+  async getPlaylistsHandler(request, h) {
     const userId = request.auth.credentials.id;
-    const playlists = await this._playlistsService.getPlaylists(userId);
+    const { playlists, isCached } = await this._playlistsService.getPlaylists(userId);
 
-    return {
+    const response = h.response({
       status: 'success',
       data: {
         playlists,
-      }
-    };
+      },
+    });
+    if (isCached) {
+      response.header('X-Data-Source', 'cache');
+    }
+    return response;
   }
 
   async deletePlaylistHandler(request) {
@@ -38,7 +42,7 @@ class PlaylistsHandler {
     const currentUserId = request.auth.credentials.id;
     await this._playlistsService.verifyPlaylistOwner(id, currentUserId);
 
-    await this._playlistsService.deletePlaylistById(id);
+    await this._playlistsService.deletePlaylistById(id, currentUserId);
     return {
       status: 'success',
       message: 'Playlist berhasil dihapus',

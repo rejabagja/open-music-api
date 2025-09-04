@@ -4,8 +4,9 @@ const InvariantError = require('../../exceptions/InvariantError');
 const NotFoundError = require('../../exceptions/NotFoundError');
 
 class CollaborationsService {
-  constructor() {
+  constructor(cacheService) {
     this._pool = new Pool();
+    this._cacheService = cacheService;
   }
 
   async addCollaboration({ playlistId, userId }) {
@@ -33,6 +34,8 @@ class CollaborationsService {
       if (!result.rows.length) {
         throw new InvariantError('Collaboration playlist gagal ditambahkan');
       }
+
+      await this._cacheService.delete(`playlists:${userId}`);
       return result.rows[0].id;
     } catch (error) {
       if (error.message.includes('violates unique constraint')) {
@@ -56,6 +59,8 @@ class CollaborationsService {
         'Collaboration playlist gagal dihapus. Kolaborasi playlist tidak ditemukan'
       );
     }
+
+    await this._cacheService.delete(`playlists:${userId}`);
   }
 
   async verifyCollaborator(playlistId, userId) {

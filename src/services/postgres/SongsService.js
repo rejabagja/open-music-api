@@ -53,7 +53,7 @@ class SongsService {
 
   async editSongById(id, payload) {
     const { title, year, genre, performer, duration, albumId } = payload;
-    const updates = {
+    let updates = {
       title,
       year,
       genre,
@@ -63,6 +63,11 @@ class SongsService {
     if (duration) updates.duration = duration;
     if (albumId) updates['album_id'] = albumId;
 
+    updates = Object.fromEntries(
+      Object.entries(updates).filter(
+        ([key, value]) => key.length > 0 && value !== undefined
+      )
+    );
     const query = {
       text: `UPDATE songs SET ${Object.keys(updates)
         .map((key) => `${key} = $${Object.keys(updates).indexOf(key) + 1}`)
