@@ -102,7 +102,7 @@ class SongsService {
       await this.getSongById(id);
     } catch (error) {
       if (error instanceof NotFoundError) {
-        throw error;
+        error.message = `Verifikasi gagal, ${error.message}`;
       }
       throw error;
     }
