@@ -97,7 +97,7 @@ class AlbumsService {
       await this.getAlbumById(id);
     } catch (error) {
       if (error instanceof NotFoundError) {
-        throw new InvariantError('albumId tidak valid');
+        error.message = `Verifikasi gagal, ${error.message}`;
       }
       throw error;
     }
