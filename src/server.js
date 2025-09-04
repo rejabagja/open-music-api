@@ -2,6 +2,7 @@
 
 require('dotenv').config();
 
+const config = require('./utils/config');
 const path = require('path');
 const Hapi = require('@hapi/hapi');
 const Jwt = require('@hapi/jwt');
@@ -66,8 +67,8 @@ const init = async () => {
   const albumLikesService = new AlbumLikesService(cacheService);
 
   const server = Hapi.server({
-    port: process.env.PORT,
-    host: process.env.HOST,
+    port: config.app.port,
+    host: config.app.host,
     routes: {
       cors: {
         origin: ['*'],
@@ -85,12 +86,12 @@ const init = async () => {
   ]);
 
   server.auth.strategy('open_music_jwt', 'jwt', {
-    keys: process.env.ACCESS_TOKEN_KEY,
+    keys: config.jwt.accessTokenKey,
     verify: {
       aud: false,
       iss: false,
       sub: false,
-      maxAgeSec: process.env.ACCESS_TOKEN_AGE,
+      maxAgeSec: config.jwt.accessTokenAge,
     },
     validate: (artifacts) => ({
       isValid: true,

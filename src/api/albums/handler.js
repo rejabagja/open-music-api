@@ -1,3 +1,5 @@
+const config = require('../../utils/config');
+
 class AlbumsHandler {
   constructor(albumsService, validator) {
     this._albumsService = albumsService;
@@ -24,7 +26,7 @@ class AlbumsHandler {
   async getAlbumByIdHandler(request) {
     const { id } = request.params;
     const album = await this._albumsService.getAlbumById(id);
-    album.coverUrl = album.coverName ? `http://${process.env.HOST}:${process.env.PORT}/upload/images/${album.coverName}` : null;
+    album.coverUrl = album.coverName ? `http://${config.app.host}:${config.app.port}/upload/images/${album.coverName}` : null;
     delete album.coverName;
 
     return {
